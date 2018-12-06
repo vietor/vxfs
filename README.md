@@ -33,7 +33,7 @@ Example
 ./vxfs-named /data/name
 ```
 
-### Proxy
+### Proxy Server
 
 It default bind in ":1750", use "-vxfsAddress port" for modify.
 
@@ -52,7 +52,7 @@ Example
 
 ## API
 
-The `vxfs` use the **HTTP REST API** for **mostly usage**.
+The `vxfs` **Proxy Server** use the **HTTP REST API** for **mostly usage**.
 
 Success reponse like:
 
