@@ -20,14 +20,16 @@ type ProxyServer struct {
 	closed         bool
 	server         *http.Server
 	listener       net.Listener
+	safeCode       string
 	idMaker        *SnowFlake
 	serviceManager *ServiceManager
 }
 
 type HttpHandler func(http.ResponseWriter, *http.Request)
 
-func NewProxyServer(address string, idMaker *SnowFlake, serviceManager *ServiceManager) (s *ProxyServer, err error) {
+func NewProxyServer(address string, safeCode string, idMaker *SnowFlake, serviceManager *ServiceManager) (s *ProxyServer, err error) {
 	s = &ProxyServer{}
+	s.safeCode = safeCode
 	s.idMaker = idMaker
 	s.serviceManager = serviceManager
 
@@ -61,21 +63,32 @@ func (s *ProxyServer) Close() {
 
 func (s *ProxyServer) route(res http.ResponseWriter, req *http.Request) {
 	var (
-		h HttpHandler
+		write   bool
+		handler HttpHandler
 	)
 
 	switch req.Method {
 	case "PUT":
-		h = s.handleUpload
+		write = true
+		handler = s.handleUpload
 	case "DELETE":
-		h = s.handleDelete
+		write = true
+		handler = s.handleDelete
 	case "HEAD", "GET":
-		h = s.handleDownload
+		handler = s.handleDownload
 	default:
-		http.Error(res, "", http.StatusMethodNotAllowed)
+		http.Error(res, "Access PUT,DELETE,HEAD,GET", http.StatusMethodNotAllowed)
 		return
 	}
-	h(res, req)
+
+	if write && len(s.safeCode) > 0 {
+		safeCode := req.Header.Get("VXFS-SAFE-CODE")
+		if len(safeCode) < 1 || s.safeCode != safeCode {
+			http.Error(res, "Require Header `VXFS-SAFE-CODE`", http.StatusUnauthorized)
+			return
+		}
+	}
+	handler(res, req)
 }
 
 func (s *ProxyServer) parseName(req *http.Request) (name string, err error) {

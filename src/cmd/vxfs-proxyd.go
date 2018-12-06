@@ -15,7 +15,8 @@ var (
 	myName = "vxfs-proxyd"
 	myVer  = "1.1"
 	myArgs = struct {
-		address string
+		address  string
+		safeCode string
 
 		statsRefresh     int
 		nameDataFreeMB   int
@@ -26,6 +27,7 @@ var (
 
 func init() {
 	flag.StringVar(&myArgs.address, "vxfsAddress", ":1750", "network bind address, [host:]port")
+	flag.StringVar(&myArgs.safeCode, "vxfsSafeCode", "", "safe code for http upload & delete")
 	flag.IntVar(&myArgs.statsRefresh, "vxfsStatsRefresh", 5, "stats refresh interval, second")
 	flag.IntVar(&myArgs.nameDataFreeMB, "vxfsNameDataFree", 100, "require <name server> data free space, MB")
 	flag.IntVar(&myArgs.storeDataFreeMB, "vxfsStoreDataFree", 200, "require <sotre server> data free space, MB")
@@ -118,7 +120,7 @@ func main() {
 		glog.Exitln(err)
 	}
 
-	server, err := proxy.NewProxyServer(myArgs.address, idMaker, serviceManager)
+	server, err := proxy.NewProxyServer(myArgs.address, myArgs.safeCode, idMaker, serviceManager)
 	if err != nil {
 		glog.Exitln(err)
 	}
