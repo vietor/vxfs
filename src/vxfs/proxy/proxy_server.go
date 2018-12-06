@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"regexp"
+	"strings"
 	"vxfs/dao/name"
 	"vxfs/dao/store"
 	"vxfs/libs"
@@ -17,19 +18,22 @@ type FileMeta struct {
 }
 
 type ProxyServer struct {
-	closed         bool
-	server         *http.Server
-	listener       net.Listener
+	closed   bool
+	server   *http.Server
+	listener net.Listener
+
 	safeCode       string
+	noDigMime      bool
 	idMaker        *SnowFlake
 	serviceManager *ServiceManager
 }
 
 type HttpHandler func(http.ResponseWriter, *http.Request)
 
-func NewProxyServer(address string, safeCode string, idMaker *SnowFlake, serviceManager *ServiceManager) (s *ProxyServer, err error) {
+func NewProxyServer(address string, safeCode string, noDigMime bool, idMaker *SnowFlake, serviceManager *ServiceManager) (s *ProxyServer, err error) {
 	s = &ProxyServer{}
 	s.safeCode = safeCode
+	s.noDigMime = noDigMime
 	s.idMaker = idMaker
 	s.serviceManager = serviceManager
 
@@ -130,8 +134,18 @@ func (s *ProxyServer) handleUpload(res http.ResponseWriter, req *http.Request) {
 	req.Body.Close()
 	meta.ETag = libs.HashSHA1(swreq.Data)
 
-	if meta.Mime = req.Header.Get("Content-Type"); meta.Mime == "" {
+	if s.noDigMime {
+		if meta.Mime = req.Header.Get("Content-Type"); meta.Mime == "" {
+			meta.Mime = http.DetectContentType(swreq.Data)
+		}
+	} else {
+		headerMime := req.Header.Get("Content-Type")
 		meta.Mime = http.DetectContentType(swreq.Data)
+		if len(headerMime) > 0 {
+			if strings.HasPrefix(meta.Mime, "text/") || meta.Mime == "application/octet-stream" {
+				meta.Mime = headerMime
+			}
+		}
 	}
 
 	if swreq.Meta, err = json.Marshal(meta); err != nil {

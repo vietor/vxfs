@@ -15,8 +15,9 @@ var (
 	myName = "vxfs-proxyd"
 	myVer  = "1.1"
 	myArgs = struct {
-		address  string
-		safeCode string
+		address   string
+		safeCode  string
+		noDigMime bool
 
 		statsRefresh     int
 		nameDataFreeMB   int
@@ -27,7 +28,8 @@ var (
 
 func init() {
 	flag.StringVar(&myArgs.address, "vxfsAddress", ":1750", "network bind address, [host:]port")
-	flag.StringVar(&myArgs.safeCode, "vxfsSafeCode", "", "safe code for http upload & delete")
+	flag.StringVar(&myArgs.safeCode, "vxfsSafeCode", "", "validate http header VXFS-SAFE-CODE on PUT & DELETE")
+	flag.BoolVar(&myArgs.noDigMime, "vxfsNoDigMime", false, "disable http content type deep guess on PUT")
 	flag.IntVar(&myArgs.statsRefresh, "vxfsStatsRefresh", 5, "stats refresh interval, second")
 	flag.IntVar(&myArgs.nameDataFreeMB, "vxfsNameDataFree", 100, "require <name server> data free space, MB")
 	flag.IntVar(&myArgs.storeDataFreeMB, "vxfsStoreDataFree", 200, "require <sotre server> data free space, MB")
@@ -120,7 +122,7 @@ func main() {
 		glog.Exitln(err)
 	}
 
-	server, err := proxy.NewProxyServer(myArgs.address, myArgs.safeCode, idMaker, serviceManager)
+	server, err := proxy.NewProxyServer(myArgs.address, myArgs.safeCode, myArgs.noDigMime, idMaker, serviceManager)
 	if err != nil {
 		glog.Exitln(err)
 	}
