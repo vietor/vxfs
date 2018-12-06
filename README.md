@@ -50,6 +50,7 @@ Example
 ./vxfs-proxyd 1 1 127.0.0.1:1720 1/127.0.0.1:1730,2/127.0.0.1:1731
 ```
 
+> **Store Server list** - **"&lt;store id&gt;/&lt;store server address&gt;,..."**, the **store id** **Cannot Modified** when it flag a **Store Server**.
 
 ## API
 
