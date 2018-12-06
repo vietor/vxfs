@@ -56,9 +56,9 @@ var (
 )
 
 type DataFile struct {
-	r      *os.File
-	w      *os.File
-	closed bool
+	r *os.File
+	w *os.File
+
 	File   string
 	Size   int64
 	Offset int64
@@ -156,11 +156,6 @@ func (d *DataFile) parseHead() (err error) {
 }
 
 func (d *DataFile) Read(offset int64, size int32) (key uint64, flag byte, meta []byte, data []byte, err error) {
-	if d.closed {
-		err = ErrDataFileClosed
-		return
-	}
-
 	var (
 		cursor      = 0
 		metaSize    int32
@@ -200,11 +195,6 @@ func (d *DataFile) Read(offset int64, size int32) (key uint64, flag byte, meta [
 }
 
 func (d *DataFile) Write(key uint64, meta []byte, data []byte) (offset int64, size int32, err error) {
-	if d.closed {
-		err = ErrDataFileClosed
-		return
-	}
-
 	var (
 		cursor                 = 0
 		metaSize               = len(meta)
@@ -249,20 +239,11 @@ func (d *DataFile) Write(key uint64, meta []byte, data []byte) (offset int64, si
 }
 
 func (d *DataFile) Delete(offset int64) (err error) {
-	if d.closed {
-		return ErrDataFileClosed
-	}
-
-	if d.w.WriteAt([]byte{FlagDel}, offset+int64(dataBlockFlagOffset)); err != nil {
-		return
-	}
+	_, err = d.w.WriteAt([]byte{FlagDel}, offset+int64(dataBlockFlagOffset))
 	return
 }
 
 func (d *DataFile) Recovery(offset int64, fn func(uint64, byte, int64, int32) error) (err error) {
-	if d.closed {
-		return ErrDataFileClosed
-	}
 	var (
 		key         uint64
 		flag        byte
@@ -354,5 +335,4 @@ func (d *DataFile) Close() {
 		}
 		d.r = nil
 	}
-	d.closed = true
 }

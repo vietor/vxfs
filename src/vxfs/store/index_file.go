@@ -40,8 +40,8 @@ var (
 )
 
 type IndexFile struct {
-	f      *os.File
-	closed bool
+	f *os.File
+
 	File   string
 	Size   int64
 	Offset int64
@@ -125,10 +125,6 @@ func (i *IndexFile) parseHead() (err error) {
 }
 
 func (i *IndexFile) Write(key uint64, offset int64, size int32) (err error) {
-	if i.closed {
-		return ErrIndexFileClosed
-	}
-
 	var (
 		cursor      = 0
 		blockBuffer = make([]byte, indexBlockSize)
@@ -161,9 +157,6 @@ func (i *IndexFile) Flush() (err error) {
 }
 
 func (i *IndexFile) Recovery(fn func(uint64, int64, int32) error) (err error) {
-	if i.closed {
-		return ErrIndexFileClosed
-	}
 	var (
 		key         uint64
 		offset      int64
@@ -225,5 +218,4 @@ func (i *IndexFile) Close() {
 		}
 		i.f = nil
 	}
-	i.closed = true
 }

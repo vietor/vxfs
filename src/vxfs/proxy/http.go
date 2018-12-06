@@ -27,9 +27,9 @@ func errorToErrorCode(err error) int {
 		return 102
 	} else if libs.IsErrorSame(err, store.ErrStoreNotExists) {
 		return 103
-	} else if libs.IsErrorSame(err, name.ErrNameKeyExists) {
+	} else if libs.IsErrorSame(err, name.ErrNameExists) {
 		return 104
-	} else if libs.IsErrorSame(err, store.ErrStoreKeyExists) {
+	} else if libs.IsErrorSame(err, store.ErrStoreExists) {
 		return 105
 	}
 	return 100

@@ -91,14 +91,14 @@ func (s *ServiceManager) refreshStats() {
 		sres = &store.StatsResponse{}
 	)
 	if err = s.nameService.client.Call("NameService.Stats", nreq, nres); err != nil {
-		glog.Warningf("ServiceManager NameService Stats error(%v)\n", err)
+		glog.Warningf("NameService Stats error(%v)\n", err)
 	} else {
 		s.nameService.stats = nres.Stats
 		s.nameService.stime = time.Now().Unix()
 	}
 	for id, storeService := range s.storeServices {
 		if err = storeService.client.Call("StoreService.Stats", sreq, sres); err != nil {
-			glog.Warningf("ServiceManager StoreService(%d) Stats error(%v)\n", id, err)
+			glog.Warningf("StoreService(%d) Stats error(%v)\n", id, err)
 		} else {
 			storeService.stats = sres.Stats
 			storeService.stime = time.Now().Unix()

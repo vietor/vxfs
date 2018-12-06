@@ -166,11 +166,11 @@ func (g *VolumeGroup) Read(req *ReadRequest, res *ReadResponse) (err error) {
 
 func (g *VolumeGroup) Write(req *WriteRequest, res *WriteResponse) (err error) {
 	if g.stats.DataFreeMB < g.dataFreeMB {
-		err = ErrDataNoDiskSpace
+		err = ErrDataNoSpace
 		return
 	}
 	if g.stats.IndexFreeMB < g.indexFreeMB {
-		err = ErrIndexNoDiskSpace
+		err = ErrIndexNoSpace
 		return
 	}
 
@@ -179,7 +179,7 @@ func (g *VolumeGroup) Write(req *WriteRequest, res *WriteResponse) (err error) {
 		v *VolumeFile
 	)
 	if k = g.keyCache.Get(req.Key); k != nil {
-		err = ErrStoreKeyExists
+		err = ErrStoreExists
 		return
 	}
 	if v, err = g.allocVolume(); err != nil {

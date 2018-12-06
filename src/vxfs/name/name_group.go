@@ -145,7 +145,7 @@ func (g *NameGroup) Read(req *ReadRequest, res *ReadResponse) (err error) {
 
 func (g *NameGroup) Write(req *WriteRequest, res *WriteResponse) (err error) {
 	if g.stats.DataFreeMB < g.dataFreeMB {
-		err = ErrDataNoDiskSpace
+		err = ErrDataNoSpace
 		return
 	}
 
@@ -154,7 +154,7 @@ func (g *NameGroup) Write(req *WriteRequest, res *WriteResponse) (err error) {
 		n *NameFile
 	)
 	if k = g.nameCache.Get(req.Name); k != nil {
-		err = ErrNameKeyExists
+		err = ErrNameExists
 		return
 	}
 	if n, err = g.allocName(); err != nil {
