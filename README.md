@@ -89,7 +89,7 @@ curl -X PUT \
   --upload-file ./logo.png
 ```
 
-> The HTTP header `Content-Type` was required
+> The HTTP header `Content-Type` was recommend.
 
 Response
 ``` json

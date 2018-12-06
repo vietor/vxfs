@@ -110,17 +110,16 @@ func (s *ProxyServer) handleUpload(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if meta.Mime = req.Header.Get("Content-Type"); meta.Mime == "" {
-		err = ErrHttpContentType
-		return
-	}
-
 	if swreq.Data, err = ioutil.ReadAll(req.Body); err != nil || len(swreq.Data) < 1 {
 		err = ErrHttpUploadBody
 		return
 	}
 	req.Body.Close()
 	meta.ETag = libs.HashSHA1(swreq.Data)
+
+	if meta.Mime = req.Header.Get("Content-Type"); meta.Mime == "" {
+		meta.Mime = http.DetectContentType(swreq.Data)
+	}
 
 	if swreq.Meta, err = json.Marshal(meta); err != nil {
 		return
