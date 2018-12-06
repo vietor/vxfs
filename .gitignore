@@ -1,0 +1,13 @@
+.DS_Store
+
+GPATH
+GRTAGS
+GTAGS
+
+/.aproject
+/bin
+/pkg
+/data
+/src/test*
+/src/github.com
+/src/golang.org
