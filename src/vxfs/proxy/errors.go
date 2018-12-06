@@ -6,10 +6,9 @@ import (
 )
 
 var (
-	ErrHttpNameFormat  = errors.New("http bad name format")
-	ErrHttpPathFormat  = errors.New("http bad path format")
-	ErrHttpUploadBody  = errors.New("http bad body in upload")
-	ErrHttpContentType = errors.New("http bad content type in headers")
+	ErrHttpNameFormat = errors.New("http bad name format")
+	ErrHttpPathFormat = errors.New("http bad path format")
+	ErrHttpUploadBody = errors.New("http bad body in upload")
 
 	ErrInvalidatePrameter  = errors.New("invalidate parameter")
 	ErrNameServiceNoLive   = errors.New("name service no living")
