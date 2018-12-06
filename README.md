@@ -46,7 +46,8 @@ vxfs-proxyd <datacenter id> <machine id> <name server> <store server list>
 
 Example
 ```bash
-./vxfs-proxyd 1 1 127.0.0.1:1720 1 1/127.0.0.1:1730
+./vxfs-proxyd 1 1 127.0.0.1:1720 1/127.0.0.1:1730
+./vxfs-proxyd 1 1 127.0.0.1:1720 1/127.0.0.1:1730,2/127.0.0.1:1731
 ```
 
 
