@@ -1,7 +1,6 @@
 package proxy
 
 import (
-	"math/rand"
 	"sync"
 	"time"
 	"vxfs/dao/name"
@@ -24,7 +23,6 @@ type StoreService struct {
 }
 
 type ServiceManager struct {
-	rand   *rand.Rand
 	ticker *libs.VxTicker
 
 	nameDataFreeMB   uint64
@@ -39,7 +37,6 @@ type ServiceManager struct {
 
 func NewServiceManager(nameDataFreeMB int, storeDataFreeMB int, storeIndexFreeMB int, statsRefresh int) (s *ServiceManager) {
 	s = &ServiceManager{}
-	s.rand = rand.New(rand.NewSource(time.Now().Unix()))
 	s.ticker = libs.NewVxTicker(s.refreshStats, time.Duration(statsRefresh)*time.Second)
 	s.nameDataFreeMB = uint64(nameDataFreeMB)
 	s.storeDataFreeMB = uint64(storeDataFreeMB)
@@ -153,9 +150,11 @@ func (s *ServiceManager) GetSid(size int64) (sid int32, err error) {
 
 	if count < 0 {
 		err = ErrStoreServiceNoSpace
-		return
+	} else if count == 1 {
+		sid = frees[0].id
+	} else {
+		sid = frees[libs.Rand.Intn(count)].id
 	}
-	sid = frees[s.rand.Intn(count)].id
 	return
 }
 
