@@ -30,18 +30,19 @@ func (l *ProcessLock) Lock() (err error) {
 	if err = os.MkdirAll(filepath.Dir(l.File), 0777); err != nil {
 		return
 	}
-	if l.f, err = os.OpenFile(l.File, os.O_CREATE|os.O_WRONLY, 0644); err != nil {
+	if l.f, err = os.OpenFile(l.File, os.O_CREATE|os.O_RDWR|O_NOATIME, 0644); err != nil {
 		return
 	}
 	if err = Flock(int(l.f.Fd())); err != nil {
-		l.f.Close()
-		l.f = nil
 		emsg := "file already locked"
-		body, err1 := ReadTextFile(l.File)
+		body, err1 := readTextFile(l.f)
 		if err1 == nil && len(body) > 0 {
 			emsg += " by (" + body + ")"
 		}
 		err = errors.New(emsg)
+
+		l.f.Close()
+		l.f = nil
 		return
 	}
 	stat, _ := l.f.Stat()
