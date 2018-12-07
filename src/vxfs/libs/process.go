@@ -30,7 +30,7 @@ func (l *ProcessLock) Lock() (err error) {
 	if err = os.MkdirAll(filepath.Dir(l.File), 0777); err != nil {
 		return
 	}
-	if l.f, err = os.OpenFile(l.File, os.O_CREATE|os.O_RDWR|O_NOATIME, 0644); err != nil {
+	if l.f, err = os.OpenFile(l.File, os.O_CREATE|os.O_RDWR|O_NOATIME, ModeFile); err != nil {
 		return
 	}
 	if err = Flock(int(l.f.Fd())); err != nil {

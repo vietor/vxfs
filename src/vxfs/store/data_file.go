@@ -67,13 +67,13 @@ type DataFile struct {
 func NewDataFile(file string) (d *DataFile, err error) {
 	d = &DataFile{}
 	d.File = file
-	if d.w, err = os.OpenFile(file, os.O_WRONLY|os.O_CREATE|libs.O_NOATIME, 0644); err != nil {
+	if d.w, err = os.OpenFile(file, os.O_WRONLY|os.O_CREATE|libs.O_NOATIME, libs.ModeFile); err != nil {
 		glog.Errorf("os.OpenFile(\"%s\") WRITE error(%v)", file, err)
 		d.Close()
 		d = nil
 		return
 	}
-	if d.r, err = os.OpenFile(file, os.O_RDONLY|libs.O_NOATIME, 0644); err != nil {
+	if d.r, err = os.OpenFile(file, os.O_RDONLY|libs.O_NOATIME, libs.ModeFile); err != nil {
 		glog.Errorf("os.OpenFile(\"%s\") READ error(%v)", file, err)
 		d.Close()
 		d = nil

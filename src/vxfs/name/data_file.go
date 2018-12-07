@@ -64,7 +64,7 @@ type DataFile struct {
 func NewDataFile(file string) (d *DataFile, err error) {
 	d = &DataFile{}
 	d.File = file
-	if d.f, err = os.OpenFile(file, os.O_RDWR|os.O_CREATE|libs.O_NOATIME, 0644); err != nil {
+	if d.f, err = os.OpenFile(file, os.O_RDWR|os.O_CREATE|libs.O_NOATIME, libs.ModeFile); err != nil {
 		glog.Errorf("os.OpenFile(\"%s\") error(%v)", file, err)
 		d.Close()
 		d = nil

@@ -50,7 +50,7 @@ type IndexFile struct {
 func NewIndexFile(file string) (i *IndexFile, err error) {
 	i = &IndexFile{}
 	i.File = file
-	if i.f, err = os.OpenFile(file, os.O_RDWR|os.O_CREATE|libs.O_NOATIME, 0644); err != nil {
+	if i.f, err = os.OpenFile(file, os.O_RDWR|os.O_CREATE|libs.O_NOATIME, libs.ModeFile); err != nil {
 		glog.Errorf("os.OpenFile(\"%s\") error(%v)", file, err)
 		i.Close()
 		i = nil
