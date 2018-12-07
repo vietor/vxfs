@@ -39,15 +39,15 @@ It default bind in ":1750", use "-vxfsAddress port" for modify.
 
 Usage
 ```
-vxfs-proxyd <datacenter id> <machine id> <name server> <store server list>
+vxfs-proxyd <machine id> <name server> <store server list>
 ```
 
-> the **datacenter id** and **machine id**  was used for generate **snowflake** style key.
+> the **machine id**  was used for generate **snowflake** key.
 
 Example
 ```bash
-./vxfs-proxyd 1 1 127.0.0.1:1720 1/127.0.0.1:1730
-./vxfs-proxyd 1 1 127.0.0.1:1720 1/127.0.0.1:1730,2/127.0.0.1:1731
+./vxfs-proxyd 1 127.0.0.1:1720 1/127.0.0.1:1730
+./vxfs-proxyd 1 127.0.0.1:1720 1/127.0.0.1:1730,2/127.0.0.1:1731
 ```
 
 > **Store Server list** - **"&lt;store id&gt;/&lt;store server address&gt;,..."**, the **store id** **Cannot Modified** when it flag a **Store Server**.

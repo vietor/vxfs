@@ -36,10 +36,9 @@ func init() {
 	flag.IntVar(&myArgs.storeIndexFreeMB, "vxfsStoreIndexFree", 60, "require <sotre server> index free space, MB")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "The vxfs proxy server, Version: %s\n"+
-			"\n%s <datacenter id> <machine id> <name server> <store server list>\n"+
+			"\n%s <machine id> <name server> <store server list>\n"+
 			"\nFormats:\n"+
-			"  <datacenter id> 1 ~ 31\n"+
-			"  <machine id> 1 ~ 31\n"+
+			"  <machine id> 1 ~ 1023\n"+
 			"  <name server> host:port\n"+
 			"  <sotre server list> id1/host1:port1,id2/host2:port2..., the id must gt 0\n"+
 			"\nOptions:\n", myVer, myName)
@@ -50,16 +49,15 @@ func init() {
 func main() {
 	flag.Parse()
 
-	if flag.NArg() < 4 {
+	if flag.NArg() < 3 {
 		fmt.Println("incorrect parameter count")
 		flag.Usage()
 		return
 	}
 
-	datacenterIdStr := flag.Args()[0]
-	machineIdStr := flag.Args()[1]
-	nameServerAddress := flag.Args()[2]
-	storeServerGroup := flag.Args()[3]
+	machineIdStr := flag.Args()[0]
+	nameServerAddress := flag.Args()[1]
+	storeServerGroup := flag.Args()[2]
 
 	if !libs.IsHostPort(myArgs.address) {
 		fmt.Println("incorrect option: vxfsAddress")
@@ -67,23 +65,14 @@ func main() {
 		return
 	}
 
-	if !libs.IsIntegerText(datacenterIdStr) {
-		fmt.Println("incorrect parameter: datacenter id")
-		flag.Usage()
-		return
+	machineId := 0
+	if libs.IsIntegerText(machineIdStr) {
+		machineId, _ = strconv.Atoi(machineIdStr)
 	}
-	datacenterId, _ := strconv.Atoi(datacenterIdStr)
-
-	if !libs.IsIntegerText(machineIdStr) {
+	if machineId < 1 || machineId > 1023 {
 		fmt.Println("incorrect parameter: machine id")
 		flag.Usage()
 		return
-	}
-	machineId, _ := strconv.Atoi(machineIdStr)
-
-	idMaker, err := proxy.NewSnowFlake(int64(datacenterId), int64(machineId), 0)
-	if err != nil {
-		glog.Exitln(err)
 	}
 
 	serviceManager := proxy.NewServiceManager(myArgs.nameDataFreeMB, myArgs.storeDataFreeMB, myArgs.storeIndexFreeMB, myArgs.statsRefresh)
@@ -122,7 +111,8 @@ func main() {
 		glog.Exitln(err)
 	}
 
-	server, err := proxy.NewProxyServer(myArgs.address, myArgs.safeCode, myArgs.noDigMime, idMaker, serviceManager)
+	keyMaker, _ := libs.NewSnowFlake(int64(machineId))
+	server, err := proxy.NewProxyServer(myArgs.address, myArgs.safeCode, myArgs.noDigMime, keyMaker, serviceManager)
 	if err != nil {
 		glog.Exitln(err)
 	}

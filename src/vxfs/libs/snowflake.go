@@ -1,26 +1,22 @@
-package proxy
+package libs
 
 import (
 	"errors"
 	"fmt"
 	"sync"
 	"time"
-	"vxfs/libs/glog"
 )
 
 // snowflake bits
 // -----------------
 // | timestamp     | --- 42 bits
-// | datacenter    | --- 5 bits
-// | machine       | --- 5 bits
+// | machine       | --- 10 bits
 // | sequence      | --- 12 bits
 // -----------------
 
 const (
-	maxDatacenterId = -1 ^ (-1 << 5)
-	maxMachineId    = -1 ^ (-1 << 5)
-	sequenceMask    = -1 ^ (-1 << 12)
-	MinSnowFlakeId  = 225901025343 << 22 // 2018-01-01
+	maxMachineId    = -1 ^ (-1 << 10)
+	maxSequenceMask = -1 ^ (-1 << 12)
 )
 
 func twTimestamp() int64 {
@@ -36,41 +32,28 @@ func waitTwTimestamp(current int64) int64 {
 }
 
 type SnowFlake struct {
-	maxCount      int
-	datacenterId  int64
 	machineId     int64
 	sequence      int64
 	lastTimestamp int64
 	safeLock      sync.Mutex
 }
 
-func NewSnowFlake(datacenterId int64, machineId int64, maxCount int) (*SnowFlake, error) {
-	if datacenterId < 0 || datacenterId > maxDatacenterId {
-		return nil, errors.New(fmt.Sprintf("datacenterId: %d error, 0-%d", datacenterId, maxDatacenterId))
-	}
-	if machineId < 0 || machineId > maxMachineId {
-		return nil, errors.New(fmt.Sprintf("machineId: %d error, 0-%d", machineId, maxMachineId))
-	}
-	if maxCount == 0 {
-		maxCount = sequenceMask - 1
-	} else if maxCount < 1 || maxCount >= sequenceMask {
-		return nil, errors.New(fmt.Sprintf("maxCount: %d error, must > 0 & < %d", maxCount, sequenceMask))
+func NewSnowFlake(machineId int64) (*SnowFlake, error) {
+	if machineId < 0 || machineId >= maxMachineId {
+		return nil, errors.New(fmt.Sprintf("MachineId: %d error, limit [0,%d)", machineId, maxMachineId))
 	}
 	i := &SnowFlake{}
-	i.datacenterId = datacenterId
 	i.machineId = machineId
-	i.maxCount = maxCount
 	return i, nil
 }
 
 func (i *SnowFlake) UnsafeNextId() (uint64, error) {
 	timestamp := twTimestamp()
 	if timestamp < i.lastTimestamp {
-		glog.Errorf("Clock is moving backwards.  Rejecting requests until %d.", i.lastTimestamp)
 		return 0, errors.New(fmt.Sprintf("Clock moved backwards. Refusing %d milliseconds", i.lastTimestamp-timestamp))
 	}
 	if i.lastTimestamp == timestamp {
-		i.sequence = (i.sequence + 1) & sequenceMask
+		i.sequence = (i.sequence + 1) & maxSequenceMask
 		if i.sequence == 0 {
 			timestamp = waitTwTimestamp(timestamp)
 		}
@@ -78,7 +61,7 @@ func (i *SnowFlake) UnsafeNextId() (uint64, error) {
 		i.sequence = 0
 	}
 	i.lastTimestamp = timestamp
-	return uint64((timestamp << 22) | (i.datacenterId << 17) | (i.machineId << 12) | i.sequence), nil
+	return uint64((timestamp << 22) | (i.machineId << 12) | i.sequence), nil
 }
 
 func (i *SnowFlake) NextId() (uint64, error) {
@@ -88,8 +71,8 @@ func (i *SnowFlake) NextId() (uint64, error) {
 }
 
 func (i *SnowFlake) NextIds(count int) ([]uint64, error) {
-	if count < 1 || count > i.maxCount {
-		return nil, errors.New(fmt.Sprintf("NextIds count: %d error, limit to 1-%d", count, i.maxCount))
+	if count < 1 || count > maxSequenceMask {
+		return nil, errors.New(fmt.Sprintf("NextIds count: %d error, limit to [1,%d)", count, maxSequenceMask))
 	}
 
 	i.safeLock.Lock()

@@ -24,17 +24,17 @@ type ProxyServer struct {
 
 	safeCode       string
 	noDigMime      bool
-	idMaker        *SnowFlake
+	keyMaker       *libs.SnowFlake
 	serviceManager *ServiceManager
 }
 
 type HttpHandler func(http.ResponseWriter, *http.Request)
 
-func NewProxyServer(address string, safeCode string, noDigMime bool, idMaker *SnowFlake, serviceManager *ServiceManager) (s *ProxyServer, err error) {
+func NewProxyServer(address string, safeCode string, noDigMime bool, keyMaker *libs.SnowFlake, serviceManager *ServiceManager) (s *ProxyServer, err error) {
 	s = &ProxyServer{}
 	s.safeCode = safeCode
 	s.noDigMime = noDigMime
-	s.idMaker = idMaker
+	s.keyMaker = keyMaker
 	s.serviceManager = serviceManager
 
 	if s.listener, err = net.Listen("tcp", address); err != nil {
@@ -152,7 +152,7 @@ func (s *ProxyServer) handleUpload(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if nwreq.Key, err = s.idMaker.NextId(); err != nil {
+	if nwreq.Key, err = s.keyMaker.NextId(); err != nil {
 		return
 	}
 
