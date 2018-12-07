@@ -89,12 +89,16 @@ func (g *VolumeGroup) init() (err error) {
 	for _, file := range files {
 		name := file.Name()
 		if m, _ := regexp.MatchString("^vdata-[0-9]+$", name); m {
-			vid, _ := strconv.ParseInt(name[6:], 10, 64)
-
+			var (
+				vid int64
+				v   *VolumeFile
+			)
+			if vid, err = strconv.ParseInt(name[6:], 10, 64); err != nil {
+				glog.Errorf("VolumeGroup: \"%s\" \"%s\" init name error(%v)", g.DataDir, name, err)
+				return
+			}
 			vdFile := filepath.Join(g.DataDir, fmt.Sprintf("vdata-%d", vid))
 			viFile := filepath.Join(g.IndexDir, fmt.Sprintf("vindex-%d", vid))
-
-			var v *VolumeFile
 			if v, err = NewVolumeFile(vid, g.keyCache, vdFile, viFile); err != nil {
 				glog.Errorf("VolumeGroup: \"%s\" \"%d\" init file error(%v)", g.DataDir, vid, err)
 				return

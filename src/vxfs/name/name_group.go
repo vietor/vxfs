@@ -75,11 +75,15 @@ func (g *NameGroup) init() (err error) {
 	for _, file := range files {
 		name := file.Name()
 		if m, _ := regexp.MatchString("^ndata-[0-9]+$", name); m {
-			nid, _ := strconv.ParseInt(name[6:], 10, 64)
-
+			var (
+				nid int64
+				n   *NameFile
+			)
+			if nid, err = strconv.ParseInt(name[6:], 10, 64); err != nil {
+				glog.Errorf("NameGroup: \"%s\" \"%s\" init name error(%v)", g.DataDir, name, err)
+				return
+			}
 			ndFile := filepath.Join(g.DataDir, fmt.Sprintf("ndata-%d", nid))
-
-			var n *NameFile
 			if n, err = NewNameFile(nid, g.nameCache, ndFile); err != nil {
 				glog.Errorf("NameGroup: \"%s\" \"%d\" init file error(%v)", g.DataDir, nid, err)
 				return
