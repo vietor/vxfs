@@ -15,7 +15,7 @@ import (
 // -----------------
 
 const (
-	maxMachineId    = -1 ^ (-1 << 10)
+	MaxMachineId    = -1 ^ (-1 << 10)
 	maxSequenceMask = -1 ^ (-1 << 12)
 )
 
@@ -39,8 +39,8 @@ type SnowFlake struct {
 }
 
 func NewSnowFlake(machineId int64) (*SnowFlake, error) {
-	if machineId < 0 || machineId >= maxMachineId {
-		return nil, errors.New(fmt.Sprintf("MachineId: %d error, limit [0,%d)", machineId, maxMachineId))
+	if machineId < 0 || machineId > MaxMachineId {
+		return nil, errors.New(fmt.Sprintf("MachineId error, limit to 0 ~ %d", MaxMachineId))
 	}
 	i := &SnowFlake{}
 	i.machineId = machineId
@@ -72,7 +72,7 @@ func (i *SnowFlake) NextId() (uint64, error) {
 
 func (i *SnowFlake) NextIds(count int) ([]uint64, error) {
 	if count < 1 || count > maxSequenceMask {
-		return nil, errors.New(fmt.Sprintf("NextIds count: %d error, limit to [1,%d)", count, maxSequenceMask))
+		return nil, errors.New(fmt.Sprintf("NextIds count error, limit to 1 ~ %d", maxSequenceMask))
 	}
 
 	i.safeLock.Lock()

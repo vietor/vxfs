@@ -38,7 +38,7 @@ func init() {
 		fmt.Fprintf(os.Stderr, "The vxfs proxy server, Version: %s\n"+
 			"\n%s <machine id> <name server> <store server list>\n"+
 			"\nFormats:\n"+
-			"  <machine id> 1 ~ 1023\n"+
+			"  <machine id> 1 ~ "+fmt.Sprintf("%d\n", libs.MaxMachineId)+
 			"  <name server> host:port\n"+
 			"  <sotre server list> id1/host1:port1,id2/host2:port2..., the id must gt 0\n"+
 			"\nOptions:\n", myVer, myName)
@@ -69,7 +69,7 @@ func main() {
 	if libs.IsIntegerText(machineIdStr) {
 		machineId, _ = strconv.Atoi(machineIdStr)
 	}
-	if machineId < 1 || machineId > 1023 {
+	if machineId < 1 || machineId > libs.MaxMachineId {
 		fmt.Println("incorrect parameter: machine id")
 		flag.Usage()
 		return
