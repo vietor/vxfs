@@ -124,12 +124,12 @@ func (i *IndexFile) parseHead() (err error) {
 	return
 }
 
-func (i *IndexFile) Write(key uint64, offset int64, size int32) (err error) {
+func (i *IndexFile) Write(key int64, offset int64, size int32) (err error) {
 	var (
 		cursor      = 0
 		blockBuffer = make([]byte, indexBlockSize)
 	)
-	binary.BigEndian.PutUint64(blockBuffer[cursor:], key)
+	binary.BigEndian.PutUint64(blockBuffer[cursor:], uint64(key))
 	cursor += 8
 	binary.BigEndian.PutUint64(blockBuffer[cursor:], uint64(offset))
 	cursor += 8
@@ -156,9 +156,9 @@ func (i *IndexFile) Flush() (err error) {
 	return i.flush()
 }
 
-func (i *IndexFile) Recovery(fn func(uint64, int64, int32) error) (err error) {
+func (i *IndexFile) Recovery(fn func(int64, int64, int32) error) (err error) {
 	var (
-		key         uint64
+		key         int64
 		offset      int64
 		size        int32
 		cursor      int
@@ -176,7 +176,7 @@ func (i *IndexFile) Recovery(fn func(uint64, int64, int32) error) (err error) {
 			break
 		}
 		cursor = 0
-		key = binary.BigEndian.Uint64(blockBuffer[cursor:])
+		key = int64(binary.BigEndian.Uint64(blockBuffer[cursor:]))
 		cursor += 8
 		offset = int64(binary.BigEndian.Uint64(blockBuffer[cursor:]))
 		cursor += 8

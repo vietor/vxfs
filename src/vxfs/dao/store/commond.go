@@ -1,7 +1,7 @@
 package store
 
 type WriteRequest struct {
-	Key  uint64
+	Key  int64
 	Meta []byte
 	Data []byte
 }
@@ -10,7 +10,7 @@ type WriteResponse struct {
 }
 
 type ReadRequest struct {
-	Key uint64
+	Key int64
 }
 
 type ReadResponse struct {
@@ -20,7 +20,7 @@ type ReadResponse struct {
 }
 
 type DeleteRequest struct {
-	Key uint64
+	Key int64
 }
 
 type DeleteResponse struct {

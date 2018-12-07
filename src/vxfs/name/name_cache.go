@@ -3,9 +3,9 @@ package name
 import "sync"
 
 type NameBlock struct {
-	Nid    int32
+	Nid    int64
 	Sid    int32
-	Key    uint64
+	Key    int64
 	Offset int64
 }
 
@@ -28,11 +28,11 @@ func (c *NameCache) Get(name string) (k *NameBlock) {
 	return
 }
 
-func (c *NameCache) Set(name string, nid int32, vid int32, key uint64, offset int64, size int32) (k *NameBlock) {
+func (c *NameCache) Set(name string, nid int64, sid int32, key int64, offset int64, size int32) (k *NameBlock) {
 	c.rwlock.Lock()
 	defer c.rwlock.Unlock()
 
-	k = &NameBlock{nid, vid, key, offset}
+	k = &NameBlock{nid, sid, key, offset}
 	c.blocks[name] = k
 	return
 }

@@ -3,23 +3,23 @@ package store
 import "sync"
 
 type KeyBlock struct {
-	Vid    int32
-	Size   int32
+	Vid    int64
 	Offset int64
+	Size   int32
 }
 
 type KeyCache struct {
 	rwlock sync.RWMutex
-	blocks map[uint64]*KeyBlock
+	blocks map[int64]*KeyBlock
 }
 
 func NewKeyCache() (c *KeyCache) {
 	c = &KeyCache{}
-	c.blocks = make(map[uint64]*KeyBlock)
+	c.blocks = make(map[int64]*KeyBlock)
 	return
 }
 
-func (c *KeyCache) Get(key uint64) (k *KeyBlock) {
+func (c *KeyCache) Get(key int64) (k *KeyBlock) {
 	c.rwlock.RLock()
 	defer c.rwlock.RUnlock()
 
@@ -27,16 +27,16 @@ func (c *KeyCache) Get(key uint64) (k *KeyBlock) {
 	return
 }
 
-func (c *KeyCache) Set(key uint64, vid int32, offset int64, size int32) (k *KeyBlock) {
+func (c *KeyCache) Set(key int64, vid int64, offset int64, size int32) (k *KeyBlock) {
 	c.rwlock.Lock()
 	defer c.rwlock.Unlock()
 
-	k = &KeyBlock{vid, size, offset}
+	k = &KeyBlock{vid, offset, size}
 	c.blocks[key] = k
 	return
 }
 
-func (c *KeyCache) Del(key uint64) {
+func (c *KeyCache) Del(key int64) {
 	c.rwlock.Lock()
 	defer c.rwlock.Unlock()
 

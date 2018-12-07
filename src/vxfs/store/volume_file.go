@@ -6,7 +6,7 @@ import (
 import . "vxfs/dao/store"
 
 type VolumeFile struct {
-	Vid   int32
+	Vid   int64
 	Data  *DataFile
 	Index *IndexFile
 
@@ -15,7 +15,7 @@ type VolumeFile struct {
 	keyCache *KeyCache
 }
 
-func NewVolumeFile(vid int32, keyCache *KeyCache, dataFile string, indexFile string) (v *VolumeFile, err error) {
+func NewVolumeFile(vid int64, keyCache *KeyCache, dataFile string, indexFile string) (v *VolumeFile, err error) {
 	v = &VolumeFile{}
 	v.Vid = vid
 	v.keyCache = keyCache
@@ -41,7 +41,7 @@ func (v *VolumeFile) init() (err error) {
 	var (
 		dataOffset int64 = 0
 	)
-	if err = v.Index.Recovery(func(key uint64, offset int64, size int32) (err error) {
+	if err = v.Index.Recovery(func(key int64, offset int64, size int32) (err error) {
 		if offset < dataOffset {
 			return ErrIndexBlockOffset
 		}
@@ -54,7 +54,7 @@ func (v *VolumeFile) init() (err error) {
 	}); err != nil {
 		return
 	}
-	if err = v.Data.Recovery(dataOffset, func(key uint64, flag byte, offset int64, size int32) (err error) {
+	if err = v.Data.Recovery(dataOffset, func(key int64, flag byte, offset int64, size int32) (err error) {
 		if err = v.Index.Write(key, offset, size); err != nil {
 			return
 		}
@@ -78,7 +78,7 @@ func (v *VolumeFile) Read(k *KeyBlock, res *ReadResponse) (err error) {
 	}
 
 	var (
-		key  uint64
+		key  int64
 		flag byte
 		meta []byte
 		data []byte

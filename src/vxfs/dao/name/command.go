@@ -3,7 +3,7 @@ package name
 type WriteRequest struct {
 	Name string
 	Sid  int32
-	Key  uint64
+	Key  int64
 }
 
 type WriteResponse struct {
@@ -15,7 +15,7 @@ type ReadRequest struct {
 
 type ReadResponse struct {
 	Sid int32
-	Key uint64
+	Key int64
 }
 
 type DeleteRequest struct {

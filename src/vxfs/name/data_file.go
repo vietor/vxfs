@@ -146,7 +146,7 @@ func (d *DataFile) parseHead() (err error) {
 	return
 }
 
-func (d *DataFile) Write(name string, sid int32, skey uint64) (offset int64, size int32, err error) {
+func (d *DataFile) Write(name string, sid int32, skey int64) (offset int64, size int32, err error) {
 	var (
 		cursor                 = 0
 		nameBuffer             = []byte(name)
@@ -160,7 +160,7 @@ func (d *DataFile) Write(name string, sid int32, skey uint64) (offset int64, siz
 	cursor += dataBlockHeadMagicSize
 	binary.BigEndian.PutUint32(blockBuffer[cursor:], uint32(sid))
 	cursor += 4
-	binary.BigEndian.PutUint64(blockBuffer[cursor:], skey)
+	binary.BigEndian.PutUint64(blockBuffer[cursor:], uint64(skey))
 	cursor += 8
 	blockBuffer[cursor] = byte(0)
 	cursor += 1
@@ -188,12 +188,12 @@ func (d *DataFile) Delete(offset int64) (err error) {
 	return
 }
 
-func (d *DataFile) Recovery(fn func(string, byte, int32, uint64, int64, int32) error) (err error) {
+func (d *DataFile) Recovery(fn func(string, byte, int32, int64, int64, int32) error) (err error) {
 	var (
 		name        string
 		flag        byte
 		sid         int32
-		skey        uint64
+		skey        int64
 		paddingSize int32
 		nameSize    int32
 		bodySize    int32
@@ -222,7 +222,7 @@ func (d *DataFile) Recovery(fn func(string, byte, int32, uint64, int64, int32) e
 		cursor += dataBlockHeadMagicSize
 		sid = int32(binary.BigEndian.Uint32(blockBuffer[cursor:]))
 		cursor += 4
-		skey = binary.BigEndian.Uint64(blockBuffer[cursor:])
+		skey = int64(binary.BigEndian.Uint64(blockBuffer[cursor:]))
 		cursor += 8
 		flag = blockBuffer[cursor]
 		cursor += 1

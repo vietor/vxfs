@@ -155,7 +155,7 @@ func (d *DataFile) parseHead() (err error) {
 	return
 }
 
-func (d *DataFile) Read(offset int64, size int32) (key uint64, flag byte, meta []byte, data []byte, err error) {
+func (d *DataFile) Read(offset int64, size int32) (key int64, flag byte, meta []byte, data []byte, err error) {
 	var (
 		cursor      = 0
 		metaSize    int32
@@ -172,7 +172,7 @@ func (d *DataFile) Read(offset int64, size int32) (key uint64, flag byte, meta [
 		return
 	}
 	cursor += dataBlockHeadMagicSize
-	key = binary.BigEndian.Uint64(blockBuffer[cursor:])
+	key = int64(binary.BigEndian.Uint64(blockBuffer[cursor:]))
 	cursor += 8
 	flag = blockBuffer[cursor]
 	cursor += 1
@@ -194,7 +194,7 @@ func (d *DataFile) Read(offset int64, size int32) (key uint64, flag byte, meta [
 	return
 }
 
-func (d *DataFile) Write(key uint64, meta []byte, data []byte) (offset int64, size int32, err error) {
+func (d *DataFile) Write(key int64, meta []byte, data []byte) (offset int64, size int32, err error) {
 	var (
 		cursor                 = 0
 		metaSize               = len(meta)
@@ -206,7 +206,7 @@ func (d *DataFile) Write(key uint64, meta []byte, data []byte) (offset int64, si
 
 	copy(blockBuffer[cursor:], dataBlockHeadMagic)
 	cursor += dataBlockHeadMagicSize
-	binary.BigEndian.PutUint64(blockBuffer[cursor:], key)
+	binary.BigEndian.PutUint64(blockBuffer[cursor:], uint64(key))
 	cursor += 8
 	blockBuffer[cursor] = FlagOk
 	cursor += 1
@@ -243,9 +243,9 @@ func (d *DataFile) Delete(offset int64) (err error) {
 	return
 }
 
-func (d *DataFile) Recovery(offset int64, fn func(uint64, byte, int64, int32) error) (err error) {
+func (d *DataFile) Recovery(offset int64, fn func(int64, byte, int64, int32) error) (err error) {
 	var (
-		key         uint64
+		key         int64
 		flag        byte
 		cursor      int
 		bSize       int32
@@ -276,7 +276,7 @@ func (d *DataFile) Recovery(offset int64, fn func(uint64, byte, int64, int32) er
 			break
 		}
 		cursor += dataBlockHeadMagicSize
-		key = binary.BigEndian.Uint64(blockBuffer[cursor:])
+		key = int64(binary.BigEndian.Uint64(blockBuffer[cursor:]))
 		cursor += 8
 		flag = blockBuffer[cursor]
 		cursor += 1

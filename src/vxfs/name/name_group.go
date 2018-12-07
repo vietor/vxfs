@@ -1,7 +1,6 @@
 package name
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -16,8 +15,6 @@ import (
 import . "vxfs/dao/name"
 
 const (
-	OneNameId   = 100000000
-	MaxNameId   = 999999999
 	MaxNameSize = 8 * 1024 * 1024 * 1024
 )
 
@@ -28,13 +25,13 @@ type NameGroup struct {
 
 	current *NameFile
 	rwlock  sync.RWMutex
-	namefs  map[int32]*NameFile
+	namefs  map[int64]*NameFile
 
 	stats  *NameStats
 	ticker *libs.VxTicker
 
-	maxNid    int32
 	nameCache *NameCache
+	nidMaker  *libs.SnowFlake
 	dataPlock *libs.ProcessLock
 }
 
@@ -48,11 +45,11 @@ func NewNameGroup(dataDir string, dataFreeMB int, statsRefresh int) (g *NameGrou
 	g.DataDir = dataDir
 	g.dataFreeMB = uint64(dataFreeMB)
 	g.counters = &NameCounters{}
-	g.namefs = make(map[int32]*NameFile)
+	g.namefs = make(map[int64]*NameFile)
 	g.stats = &NameStats{}
 	g.ticker = libs.NewVxTicker(g.refreshStats, time.Duration(statsRefresh)*time.Second)
-	g.maxNid = OneNameId
 	g.nameCache = NewNameCache()
+	g.nidMaker, _ = libs.NewSnowFlake(int64(1 + libs.Rand.Intn(libs.MaxMachineId)))
 	g.dataPlock = libs.NewProcessLock(dataDir+"/", "name data")
 
 	if err = g.init(); err != nil {
@@ -78,9 +75,8 @@ func (g *NameGroup) init() (err error) {
 	for _, file := range files {
 		name := file.Name()
 		if m, _ := regexp.MatchString("^ndata-[0-9]+$", name); m {
-			key, _ := strconv.ParseInt(name[6:], 10, 32)
+			nid, _ := strconv.ParseInt(name[6:], 10, 64)
 
-			nid := int32(key)
 			ndFile := filepath.Join(g.DataDir, fmt.Sprintf("ndata-%d", nid))
 
 			var n *NameFile
@@ -89,15 +85,12 @@ func (g *NameGroup) init() (err error) {
 				return
 			}
 			g.namefs[nid] = n
-			if nid > g.maxNid {
-				g.maxNid = nid
-			}
 			g.counters.FileCount += 1
 		}
 	}
-	if g.maxNid > 0 {
-		if n, ok := g.namefs[g.maxNid]; ok && n.Data.Size < MaxNameSize {
-			g.current = n
+	for _, v := range g.namefs {
+		if v.Data.Size < MaxNameSize && (g.current == nil || v.Data.Size < g.current.Data.Size) {
+			g.current = v
 		}
 	}
 	return
@@ -112,16 +105,11 @@ func (g *NameGroup) allocName() (n *NameFile, err error) {
 		return
 	}
 
-	nid := g.maxNid + 1
-	if nid > MaxNameId {
-		err = errors.New(fmt.Sprintf("Imposible generate id: %d overflow", nid))
-		return
-	}
+	nid, _ := g.nidMaker.NextId()
 	ndFile := filepath.Join(g.DataDir, fmt.Sprintf("ndata-%d", nid))
 	if n, err = NewNameFile(nid, g.nameCache, ndFile); err != nil {
 		return
 	}
-	g.maxNid = nid
 	g.namefs[nid] = n
 	g.current = n
 	g.counters.FileCount += 1

@@ -1,7 +1,6 @@
 package store
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -16,8 +15,6 @@ import (
 import . "vxfs/dao/store"
 
 const (
-	OneVolumeId   = 100000000
-	MaxVolumeId   = 999999999
 	MaxVolumeSize = 8 * 1024 * 1024 * 1024
 )
 
@@ -30,13 +27,13 @@ type VolumeGroup struct {
 
 	current *VolumeFile
 	rwlock  sync.RWMutex
-	volumes map[int32]*VolumeFile
+	volumes map[int64]*VolumeFile
 
 	stats  *StoreStats
 	ticker *libs.VxTicker
 
-	maxVid     int32
 	keyCache   *KeyCache
+	vidMaker   *libs.SnowFlake
 	dataPlock  *libs.ProcessLock
 	indexPlock *libs.ProcessLock
 }
@@ -57,11 +54,11 @@ func NewVolumeGroup(dataDir string, indexDir string, dataFreeMB int, indexFreeMB
 	g.dataFreeMB = uint64(dataFreeMB)
 	g.indexFreeMB = uint64(indexFreeMB)
 	g.counters = &StoreCounters{}
-	g.volumes = make(map[int32]*VolumeFile)
+	g.volumes = make(map[int64]*VolumeFile)
 	g.stats = &StoreStats{}
 	g.ticker = libs.NewVxTicker(g.refreshStats, time.Duration(statsRefresh)*time.Second)
-	g.maxVid = OneVolumeId
 	g.keyCache = NewKeyCache()
+	g.vidMaker, _ = libs.NewSnowFlake(int64(1 + libs.Rand.Intn(libs.MaxMachineId)))
 	g.dataPlock = libs.NewProcessLock(dataDir+"/", "store data")
 	g.indexPlock = libs.NewProcessLock(indexDir+"/", "store index")
 
@@ -92,9 +89,8 @@ func (g *VolumeGroup) init() (err error) {
 	for _, file := range files {
 		name := file.Name()
 		if m, _ := regexp.MatchString("^vdata-[0-9]+$", name); m {
-			key, _ := strconv.ParseInt(name[6:], 10, 32)
+			vid, _ := strconv.ParseInt(name[6:], 10, 64)
 
-			vid := int32(key)
 			vdFile := filepath.Join(g.DataDir, fmt.Sprintf("vdata-%d", vid))
 			viFile := filepath.Join(g.IndexDir, fmt.Sprintf("vindex-%d", vid))
 
@@ -104,14 +100,11 @@ func (g *VolumeGroup) init() (err error) {
 				return
 			}
 			g.volumes[vid] = v
-			if vid > g.maxVid {
-				g.maxVid = vid
-			}
 			g.counters.FileCount += 1
 		}
 	}
-	if g.maxVid > 0 {
-		if v, ok := g.volumes[g.maxVid]; ok && v.Data.Size < MaxVolumeSize {
+	for _, v := range g.volumes {
+		if v.Data.Size < MaxVolumeSize && (g.current == nil || v.Data.Size < g.current.Data.Size) {
 			g.current = v
 		}
 	}
@@ -127,17 +120,12 @@ func (g *VolumeGroup) allocVolume() (v *VolumeFile, err error) {
 		return
 	}
 
-	vid := g.maxVid + 1
-	if vid > MaxVolumeId {
-		err = errors.New(fmt.Sprintf("Imposible generate id: %d overflow", vid))
-		return
-	}
+	vid, _ := g.vidMaker.NextId()
 	vdFile := filepath.Join(g.DataDir, fmt.Sprintf("vdata-%d", vid))
 	viFile := filepath.Join(g.IndexDir, fmt.Sprintf("vindex-%d", vid))
 	if v, err = NewVolumeFile(vid, g.keyCache, vdFile, viFile); err != nil {
 		return
 	}
-	g.maxVid = vid
 	g.volumes[vid] = v
 	g.current = v
 	g.counters.FileCount += 1
