@@ -3,11 +3,11 @@ package libs
 import (
 	"errors"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 )
-
-type OnProcessExit func()
 
 type ProcessLock struct {
 	File string
@@ -60,4 +60,25 @@ func (l *ProcessLock) Unlock() {
 		l.f = nil
 	}
 	return
+}
+
+type OnProcessExit func()
+
+func WaitProcessExit(onexit OnProcessExit) {
+	var (
+		sc chan os.Signal
+		s  os.Signal
+	)
+	sc = make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGSTOP)
+	for {
+		s = <-sc
+		switch s {
+		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGSTOP:
+			onexit()
+			return
+		default:
+			return
+		}
+	}
 }
