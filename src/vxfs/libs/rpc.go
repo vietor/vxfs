@@ -72,6 +72,7 @@ func (c *RpcClient) Call(serviceMethod string, args interface{}, reply interface
 
 	err = client.Call(serviceMethod, args, reply)
 	if err == rpc.ErrShutdown {
+		client.Close()
 		if client, err = c.newClient(); err != nil {
 			return
 		}
