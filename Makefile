@@ -6,8 +6,8 @@ TIMESTAMP := $(shell /bin/date "+%s")
 
 build:
 	echo $(PROJECT_PATH)
-	go build -ldflags="-s -w" -o bin/vxfs-named src/cmd/vxfs-stored.go
-	go build -ldflags="-s -w" -o bin/vxfs-stored src/cmd/vxfs-named.go
+	go build -ldflags="-s -w" -o bin/vxfs-named src/cmd/vxfs-named.go
+	go build -ldflags="-s -w" -o bin/vxfs-stored src/cmd/vxfs-stored.go
 	go build -ldflags="-s -w" -o bin/vxfs-proxyd src/cmd/vxfs-proxyd.go
 
 clean:
