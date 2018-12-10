@@ -3,7 +3,6 @@ package libs
 import (
 	"net"
 	"net/rpc"
-	"sync"
 	"time"
 )
 
@@ -41,13 +40,16 @@ func (s *RpcServer) Close() {
 
 type RpcClient struct {
 	Address string
-	rpcPool *sync.Pool
+	rpcPool *VxPool
 }
 
 func NetRpcClient(address string) (c *RpcClient) {
 	c = &RpcClient{
 		Address: address,
-		rpcPool: &sync.Pool{},
+		rpcPool: NewVxPool(10, func(x interface{}) {
+			client := x.(*rpc.Client)
+			client.Close()
+		}),
 	}
 	return
 }
@@ -62,28 +64,28 @@ func (c *RpcClient) newClient() (*rpc.Client, error) {
 
 func (c *RpcClient) Call(serviceMethod string, args interface{}, reply interface{}) (err error) {
 	var client *rpc.Client
-
-	node := c.rpcPool.Get()
-	if node != nil {
-		client = node.(*rpc.Client)
-	} else if client, err = c.newClient(); err != nil {
-		return
-	}
-
-	err = client.Call(serviceMethod, args, reply)
-	if err == rpc.ErrShutdown {
-		client.Close()
-		if client, err = c.newClient(); err != nil {
-			return
+	for {
+		node := c.rpcPool.Get()
+		if node != nil {
+			client = node.(*rpc.Client)
+		} else if client, err = c.newClient(); err != nil {
+			break
 		}
 		err = client.Call(serviceMethod, args, reply)
+		if err == nil {
+			break
+		} else if err == rpc.ErrShutdown {
+			client.Close()
+			client = nil
+		} else {
+			client.Close()
+			client = nil
+			break
+		}
 	}
-	if err != nil {
-		client.Close()
-		return
+	if client != nil {
+		c.rpcPool.Put(client)
 	}
-
-	c.rpcPool.Put(client)
 	return
 }
 
