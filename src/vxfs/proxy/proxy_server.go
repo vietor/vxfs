@@ -97,7 +97,7 @@ func (s *ProxyServer) route(res http.ResponseWriter, req *http.Request) {
 func (s *ProxyServer) parseName(req *http.Request) (name string, err error) {
 	path := req.URL.Path[1:]
 	if len(path) < 1 || strings.HasSuffix(path, "/") || strings.Contains(req.URL.Path, "/./") || strings.Contains(req.URL.Path, "/../") {
-		err = ErrHttpNameFormat
+		err = ErrHttpPathFormat
 		return
 	}
 	name = path

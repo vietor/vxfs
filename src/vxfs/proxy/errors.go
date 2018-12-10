@@ -6,7 +6,6 @@ import (
 )
 
 var (
-	ErrHttpNameFormat = errors.New("http bad name format")
 	ErrHttpPathFormat = errors.New("http bad path format")
 	ErrHttpUploadBody = errors.New("http bad body in upload")
 
