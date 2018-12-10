@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"regexp"
 	"strings"
 	"vxfs/dao/name"
 	"vxfs/dao/store"
@@ -97,7 +96,7 @@ func (s *ProxyServer) route(res http.ResponseWriter, req *http.Request) {
 
 func (s *ProxyServer) parseName(req *http.Request) (name string, err error) {
 	path := req.URL.Path[1:]
-	if m, _ := regexp.MatchString("^[0-9a-zA-Z_\\-.]{1,256}$", path); !m {
+	if len(path) < 1 || strings.HasSuffix(path, "/") || strings.Contains(req.URL.Path, "/./") || strings.Contains(req.URL.Path, "/../") {
 		err = ErrHttpNameFormat
 		return
 	}
