@@ -15,12 +15,12 @@ type NameBlock struct {
 
 type NameCache struct {
 	rwlock sync.RWMutex
-	blocks map[string]NameBlock
+	blocks map[string]*NameBlock
 }
 
 func NewNameCache() (c *NameCache) {
 	c = &NameCache{}
-	c.blocks = make(map[string]NameBlock)
+	c.blocks = make(map[string]*NameBlock)
 	return
 }
 
@@ -36,9 +36,7 @@ func (c *NameCache) Get(name string) (k *NameBlock) {
 	c.rwlock.RLock()
 	defer c.rwlock.RUnlock()
 
-	if d, ok := c.blocks[c.toKey(name)]; ok {
-		k = &d
-	}
+	k, _ = c.blocks[c.toKey(name)]
 	return
 }
 
@@ -52,7 +50,7 @@ func (c *NameCache) Set(name string, nid int32, sid int32, key int64, offset int
 		Key:    key,
 		Offset: offset,
 	}
-	c.blocks[c.toKey(name)] = *k
+	c.blocks[c.toKey(name)] = k
 	return
 }
 
