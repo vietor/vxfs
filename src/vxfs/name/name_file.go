@@ -6,7 +6,7 @@ import (
 import . "vxfs/dao/name"
 
 type NameFile struct {
-	Nid  int64
+	Nid  int32
 	Data *DataFile
 
 	closed    bool
@@ -14,10 +14,11 @@ type NameFile struct {
 	nameCache *NameCache
 }
 
-func NewNameFile(nid int64, nameCache *NameCache, dataFile string) (n *NameFile, err error) {
-	n = &NameFile{}
-	n.Nid = nid
-	n.nameCache = nameCache
+func NewNameFile(nid int32, nameCache *NameCache, dataFile string) (n *NameFile, err error) {
+	n = &NameFile{
+		Nid:       nid,
+		nameCache: nameCache,
+	}
 	if n.Data, err = NewDataFile(dataFile); err != nil {
 		n.Close()
 		n = nil
@@ -82,6 +83,7 @@ func (n *NameFile) Close() {
 	defer n.wlock.Unlock()
 
 	n.closed = true
+	n.nameCache = nil
 	if n.Data != nil {
 		n.Data.Close()
 		n.Data = nil

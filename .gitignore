@@ -8,6 +8,6 @@ GTAGS
 /bin
 /pkg
 /data
-/src/test*
+/test
 /src/github.com
 /src/golang.org

@@ -6,7 +6,7 @@ import (
 import . "vxfs/dao/store"
 
 type VolumeFile struct {
-	Vid   int64
+	Vid   int32
 	Data  *DataFile
 	Index *IndexFile
 
@@ -15,10 +15,11 @@ type VolumeFile struct {
 	keyCache *KeyCache
 }
 
-func NewVolumeFile(vid int64, keyCache *KeyCache, dataFile string, indexFile string) (v *VolumeFile, err error) {
-	v = &VolumeFile{}
-	v.Vid = vid
-	v.keyCache = keyCache
+func NewVolumeFile(vid int32, keyCache *KeyCache, dataFile string, indexFile string) (v *VolumeFile, err error) {
+	v = &VolumeFile{
+		Vid:      vid,
+		keyCache: keyCache,
+	}
 	if v.Data, err = NewDataFile(dataFile); err != nil {
 		v.Close()
 		v = nil
@@ -139,6 +140,7 @@ func (v *VolumeFile) Close() {
 	defer v.wlock.Unlock()
 
 	v.closed = true
+	v.keyCache = nil
 	if v.Data != nil {
 		v.Data.Close()
 		v.Data = nil

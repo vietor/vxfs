@@ -7,7 +7,7 @@ import (
 )
 
 type NameBlock struct {
-	Nid    int64
+	Nid    int32
 	Sid    int32
 	Key    int64
 	Offset int64
@@ -40,11 +40,16 @@ func (c *NameCache) Get(name string) (k *NameBlock) {
 	return
 }
 
-func (c *NameCache) Set(name string, nid int64, sid int32, key int64, offset int64, size int32) (k *NameBlock) {
+func (c *NameCache) Set(name string, nid int32, sid int32, key int64, offset int64, size int32) (k *NameBlock) {
 	c.rwlock.Lock()
 	defer c.rwlock.Unlock()
 
-	k = &NameBlock{nid, sid, key, offset}
+	k = &NameBlock{
+		Nid:    nid,
+		Sid:    sid,
+		Key:    key,
+		Offset: offset,
+	}
 	c.blocks[c.toKey(name)] = k
 	return
 }

@@ -3,9 +3,9 @@ package store
 import "sync"
 
 type KeyBlock struct {
-	Vid    int64
-	Offset int64
+	Vid    int32
 	Size   int32
+	Offset int64
 }
 
 type KeyCache struct {
@@ -27,11 +27,15 @@ func (c *KeyCache) Get(key int64) (k *KeyBlock) {
 	return
 }
 
-func (c *KeyCache) Set(key int64, vid int64, offset int64, size int32) (k *KeyBlock) {
+func (c *KeyCache) Set(key int64, vid int32, offset int64, size int32) (k *KeyBlock) {
 	c.rwlock.Lock()
 	defer c.rwlock.Unlock()
 
-	k = &KeyBlock{vid, offset, size}
+	k = &KeyBlock{
+		Vid:    vid,
+		Offset: offset,
+		Size:   size,
+	}
 	c.blocks[key] = k
 	return
 }

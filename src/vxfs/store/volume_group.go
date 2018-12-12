@@ -27,7 +27,7 @@ type VolumeGroup struct {
 
 	current *VolumeFile
 	rwlock  sync.RWMutex
-	volumes map[int64]*VolumeFile
+	volumes []*VolumeFile
 
 	stats  *StoreStats
 	ticker *libs.VxTicker
@@ -54,7 +54,7 @@ func NewVolumeGroup(dataDir string, indexDir string, dataFreeMB int, indexFreeMB
 	g.dataFreeMB = uint64(dataFreeMB)
 	g.indexFreeMB = uint64(indexFreeMB)
 	g.counters = &StoreCounters{}
-	g.volumes = make(map[int64]*VolumeFile)
+	g.volumes = make([]*VolumeFile, 0, 1000)
 	g.stats = &StoreStats{}
 	g.ticker = libs.NewVxTicker(g.refreshStats, time.Duration(statsRefresh)*time.Second)
 	g.keyCache = NewKeyCache()
@@ -90,20 +90,22 @@ func (g *VolumeGroup) init() (err error) {
 		name := file.Name()
 		if m, _ := regexp.MatchString("^vdata-[0-9]+$", name); m {
 			var (
-				vid int64
+				vid int32
+				fid int64
 				v   *VolumeFile
 			)
-			if vid, err = strconv.ParseInt(name[6:], 10, 64); err != nil {
+			if fid, err = strconv.ParseInt(name[6:], 10, 64); err != nil {
 				glog.Errorf("VolumeGroup: \"%s\" \"%s\" init name error(%v)", g.DataDir, name, err)
 				return
 			}
-			vdFile := filepath.Join(g.DataDir, fmt.Sprintf("vdata-%d", vid))
-			viFile := filepath.Join(g.IndexDir, fmt.Sprintf("vindex-%d", vid))
+			vid = int32(len(g.volumes))
+			vdFile := filepath.Join(g.DataDir, fmt.Sprintf("vdata-%d", fid))
+			viFile := filepath.Join(g.IndexDir, fmt.Sprintf("vindex-%d", fid))
 			if v, err = NewVolumeFile(vid, g.keyCache, vdFile, viFile); err != nil {
-				glog.Errorf("VolumeGroup: \"%s\" \"%d\" init file error(%v)", g.DataDir, vid, err)
+				glog.Errorf("VolumeGroup: \"%s\" \"%d\" init file error(%v)", g.DataDir, fid, err)
 				return
 			}
-			g.volumes[vid] = v
+			g.volumes = append(g.volumes, v)
 			g.counters.FileCount += 1
 		}
 	}
@@ -124,14 +126,15 @@ func (g *VolumeGroup) allocVolume() (v *VolumeFile, err error) {
 		return
 	}
 
-	vid, _ := g.vidMaker.NextId()
-	vdFile := filepath.Join(g.DataDir, fmt.Sprintf("vdata-%d", vid))
-	viFile := filepath.Join(g.IndexDir, fmt.Sprintf("vindex-%d", vid))
+	vid := int32(len(g.volumes))
+	fid, _ := g.vidMaker.NextId()
+	vdFile := filepath.Join(g.DataDir, fmt.Sprintf("vdata-%d", fid))
+	viFile := filepath.Join(g.IndexDir, fmt.Sprintf("vindex-%d", fid))
 	if v, err = NewVolumeFile(vid, g.keyCache, vdFile, viFile); err != nil {
 		return
 	}
-	g.volumes[vid] = v
 	g.current = v
+	g.volumes = append(g.volumes, v)
 	g.counters.FileCount += 1
 	return
 }
@@ -146,7 +149,7 @@ func (g *VolumeGroup) Read(req *ReadRequest, res *ReadResponse) (err error) {
 		return
 	}
 	g.rwlock.RLock()
-	v, _ = g.volumes[k.Vid]
+	v = g.volumes[k.Vid]
 	g.rwlock.RUnlock()
 	if err = v.Read(k, res); err != nil {
 		return
@@ -196,7 +199,7 @@ func (g *VolumeGroup) Delete(req *DeleteRequest, res *DeleteResponse) (err error
 	}
 
 	g.rwlock.RLock()
-	v, _ = g.volumes[k.Vid]
+	v = g.volumes[k.Vid]
 	g.rwlock.RUnlock()
 
 	if err = v.Delete(k); err != nil {

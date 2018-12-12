@@ -25,7 +25,7 @@ type NameGroup struct {
 
 	current *NameFile
 	rwlock  sync.RWMutex
-	namefs  map[int64]*NameFile
+	namefs  []*NameFile
 
 	stats  *NameStats
 	ticker *libs.VxTicker
@@ -45,7 +45,7 @@ func NewNameGroup(dataDir string, dataFreeMB int, statsRefresh int) (g *NameGrou
 	g.DataDir = dataDir
 	g.dataFreeMB = uint64(dataFreeMB)
 	g.counters = &NameCounters{}
-	g.namefs = make(map[int64]*NameFile)
+	g.namefs = make([]*NameFile, 0, 1000)
 	g.stats = &NameStats{}
 	g.ticker = libs.NewVxTicker(g.refreshStats, time.Duration(statsRefresh)*time.Second)
 	g.nameCache = NewNameCache()
@@ -76,19 +76,22 @@ func (g *NameGroup) init() (err error) {
 		name := file.Name()
 		if m, _ := regexp.MatchString("^ndata-[0-9]+$", name); m {
 			var (
-				nid int64
+				nid int32
+				fid int64
 				n   *NameFile
 			)
-			if nid, err = strconv.ParseInt(name[6:], 10, 64); err != nil {
+			if fid, err = strconv.ParseInt(name[6:], 10, 64); err != nil {
 				glog.Errorf("NameGroup: \"%s\" \"%s\" init name error(%v)", g.DataDir, name, err)
 				return
 			}
-			ndFile := filepath.Join(g.DataDir, fmt.Sprintf("ndata-%d", nid))
+
+			nid = int32(len(g.namefs))
+			ndFile := filepath.Join(g.DataDir, fmt.Sprintf("ndata-%d", fid))
 			if n, err = NewNameFile(nid, g.nameCache, ndFile); err != nil {
-				glog.Errorf("NameGroup: \"%s\" \"%d\" init file error(%v)", g.DataDir, nid, err)
+				glog.Errorf("NameGroup: \"%s\" \"%d\" init file error(%v)", g.DataDir, fid, err)
 				return
 			}
-			g.namefs[nid] = n
+			g.namefs = append(g.namefs, n)
 			g.counters.FileCount += 1
 		}
 	}
@@ -109,13 +112,14 @@ func (g *NameGroup) allocName() (n *NameFile, err error) {
 		return
 	}
 
-	nid, _ := g.nidMaker.NextId()
-	ndFile := filepath.Join(g.DataDir, fmt.Sprintf("ndata-%d", nid))
+	nid := int32(len(g.namefs))
+	fid, _ := g.nidMaker.NextId()
+	ndFile := filepath.Join(g.DataDir, fmt.Sprintf("ndata-%d", fid))
 	if n, err = NewNameFile(nid, g.nameCache, ndFile); err != nil {
 		return
 	}
-	g.namefs[nid] = n
 	g.current = n
+	g.namefs = append(g.namefs, n)
 	g.counters.FileCount += 1
 	return
 }
@@ -170,7 +174,7 @@ func (g *NameGroup) Delete(req *DeleteRequest, res *DeleteResponse) (err error) 
 	}
 
 	g.rwlock.RLock()
-	v, _ = g.namefs[k.Nid]
+	v = g.namefs[k.Nid]
 	g.rwlock.RUnlock()
 
 	if err = v.Delete(k); err != nil {
